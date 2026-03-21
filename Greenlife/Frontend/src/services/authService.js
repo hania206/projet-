@@ -1,12 +1,11 @@
-import axios from "axios";
+import api from "./api";
 
-const API_URL = "http://localhost:5000/api/users"; // matches backend
-
-export const registerUser = (data) => {
-  // data doit être FormData si image
-  return axios.post(`${API_URL}/register`, data);
+export const loginUser = async (data) => {
+  const res = await api.post("/auth/login", data);
+  return res.data;
 };
 
-export const loginUser = (data) => {
-  return axios.post(`${API_URL}/login`, data);
+export const registerUser = async (data) => {
+  const res = await api.post("/auth/register", data);
+  return res.data;
 };
