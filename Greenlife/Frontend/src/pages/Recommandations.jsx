@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from "react";
-import {
-  Lightbulb,
-  Droplets,
-  Trash2,
-  User,
-  ChevronRight,
-} from "lucide-react";
+import { Lightbulb, Droplets, Trash2, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-export default function AIRecommendations() {
+export default function Recommandations() {
   const navigate = useNavigate();
 
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({
+    recommendations: [],
+    analysis: {},
+  });
   const [loading, setLoading] = useState(true);
 
   // ✅ FETCH
@@ -27,7 +24,7 @@ export default function AIRecommendations() {
     } catch (err) {
       console.log(err);
 
-      // fallback
+      // ✅ fallback إذا الـ backend مش خدام
       setData({
         recommendations: [
           {
@@ -66,12 +63,14 @@ export default function AIRecommendations() {
     }
   };
 
-  if (loading)
+  // loading
+  if (loading) {
     return (
       <div className="p-10 text-center">
         Chargement de l'analyse IA...
       </div>
     );
+  }
 
   // 🎨 helpers
   const getBorder = (color) => {
@@ -100,47 +99,6 @@ export default function AIRecommendations() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      {/* TOP */}
-      <div className="bg-emerald-50 py-3 text-center border-b">
-        <h1 className="font-bold">GreenLife - IA</h1>
-      </div>
-
-      {/* NAV */}
-      <nav className="bg-white px-12 py-4 flex justify-between items-center border-b">
-        <h1
-          onClick={() => navigate("/")}
-          className="text-2xl font-bold text-emerald-600 cursor-pointer"
-        >
-          GreenLife
-        </h1>
-
-        <div className="flex gap-10 text-gray-500">
-          <button onClick={() => navigate("/dashboard")}>
-            Dashboard
-          </button>
-
-          <button className="text-emerald-600 border-b-2 border-emerald-600 pb-1">
-            IA
-          </button>
-
-          <button onClick={() => navigate("/objectives")}>
-            Objectifs
-          </button>
-
-          <button onClick={() => navigate("/alerts")}>
-            Alertes
-          </button>
-        </div>
-
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-emerald-600 text-white px-5 py-2 rounded-full flex gap-2"
-        >
-          <User size={18} /> Mon compte
-        </button>
-      </nav>
-
       {/* MAIN */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         <h2 className="text-3xl font-bold mb-10">
@@ -155,7 +113,6 @@ export default function AIRecommendations() {
               className={`bg-white p-8 rounded-2xl shadow border-l-4 ${getBorder(rec.color)} hover:shadow-lg transition`}
             >
               <div className="flex gap-6">
-
                 {/* ICON */}
                 <div className={`p-4 rounded-xl ${getBg(rec.color)}`}>
                   {getIcon(rec.type)}
@@ -164,10 +121,7 @@ export default function AIRecommendations() {
                 {/* TEXT */}
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <h3 className="font-bold text-lg">
-                      {rec.title}
-                    </h3>
-
+                    <h3 className="font-bold text-lg">{rec.title}</h3>
                     <span
                       className={`text-xs px-3 py-1 rounded-full border ${getBadge(rec.color)}`}
                     >
@@ -175,19 +129,16 @@ export default function AIRecommendations() {
                     </span>
                   </div>
 
-                  <p className="text-gray-500 my-3">
-                    {rec.description}
-                  </p>
+                  <p className="text-gray-500 my-3">{rec.description}</p>
 
-                  {/* 🔥 ACTION */}
+                  {/* ✅ DETAILS NAVIGATION */}
                   <button
-                    onClick={() => alert("Détails bientôt 👀")}
+                    onClick={() => navigate(`/recommandations/${rec.id}`)}
                     className="text-emerald-600 flex items-center gap-1 hover:underline"
                   >
                     Détails <ChevronRight size={16} />
                   </button>
                 </div>
-
               </div>
             </div>
           ))}
@@ -208,8 +159,6 @@ export default function AIRecommendations() {
 const AnalysisCard = ({ label, value }) => (
   <div className="bg-white p-6 rounded-xl shadow text-center hover:shadow-lg transition">
     <p className="text-gray-400 text-sm">{label}</p>
-    <h1 className="text-2xl font-bold text-emerald-600">
-      {value}
-    </h1>
+    <h1 className="text-2xl font-bold text-emerald-600">{value}</h1>
   </div>
 );

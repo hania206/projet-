@@ -7,7 +7,7 @@ export default function Login() {
 
   const [form, setForm] = useState({
     email: "",
-    password: "",
+    mdp: "",
     role: "Foyer",
   });
 
@@ -27,23 +27,19 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/api/login", form);
+      const res = await axios.post("http://localhost:5000/api/users/login", form);
 
-      // ✅ save user (important)
+      // save user in localStorage
       localStorage.setItem("user", JSON.stringify(res.data));
 
-      alert("Login successful ✅");
+      alert("Connexion réussie ✅");
 
-      // ✅ redirect حسب role
-      if (form.role === "Admin") {
-        navigate("/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      // redirect selon le role
+      navigate("/dashboard");
 
     } catch (err) {
       console.error(err);
-      setError("Email ou mot de passe incorrect ❌");
+      setError(err.response?.data?.message || "Erreur serveur ❌");
     } finally {
       setLoading(false);
     }
@@ -59,7 +55,6 @@ export default function Login() {
           <p className="mb-6">
             Connectez-vous pour suivre vos consommations et alertes écologiques.
           </p>
-
           <div className="space-y-2 text-sm">
             <p>✔ Connexion sécurisée</p>
             <p>📧 support@demo.com</p>
@@ -72,13 +67,8 @@ export default function Login() {
           <h1 className="text-2xl font-bold mb-6">GreenLife</h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
-            {/* ERROR */}
-            {error && (
-              <p className="text-red-500 text-sm">{error}</p>
-            )}
-
-            {/* Email */}
             <input
               type="email"
               name="email"
@@ -89,7 +79,6 @@ export default function Login() {
               className="w-full border rounded-lg p-3"
             />
 
-            {/* Role */}
             <select
               name="role"
               value={form.role}
@@ -100,18 +89,16 @@ export default function Login() {
               <option>Admin</option>
             </select>
 
-            {/* Password */}
             <input
               type="password"
-              name="password"
+              name="mdp"
               placeholder="Votre mot de passe"
-              value={form.password}
+              value={form.mdp}
               onChange={handleChange}
               required
               className="w-full border rounded-lg p-3"
             />
 
-            {/* Button */}
             <button
               disabled={loading}
               className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
@@ -120,9 +107,8 @@ export default function Login() {
             </button>
           </form>
 
-          {/* 🔗 REGISTER LINK */}
           <p className="mt-4 text-sm text-center">
-            Pas de compte ?
+            Pas de compte ?{" "}
             <span
               onClick={() => navigate("/register")}
               className="text-green-600 cursor-pointer ml-1"
@@ -131,7 +117,6 @@ export default function Login() {
             </span>
           </p>
 
-          {/* DEMO */}
           <div className="mt-6 p-4 bg-gray-100 rounded-lg text-sm">
             <p className="font-semibold">Accès démo</p>
             <p>Email: admin@demo.com</p>

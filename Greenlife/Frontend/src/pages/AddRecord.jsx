@@ -5,19 +5,15 @@ import axios from "axios";
 
 export default function AddRecord() {
   const navigate = useNavigate();
-
   const [type, setType] = useState("Energie");
-
   const [formData, setFormData] = useState({
     value: "",
     date: new Date().toISOString().split("T")[0],
     notes: "",
   });
-
   const [recentReadings, setRecentReadings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch data
   useEffect(() => {
     fetchData();
   }, []);
@@ -28,8 +24,6 @@ export default function AddRecord() {
       setRecentReadings(res.data);
     } catch (err) {
       console.log(err);
-
-      // fallback demo
       setRecentReadings([
         { id: 1, type: "Energie", value: "1250", unit: "kWh", date: "12 fév 2024" },
         { id: 2, type: "Eau", value: "45", unit: "m³", date: "11 fév 2024" },
@@ -40,56 +34,26 @@ export default function AddRecord() {
     }
   };
 
-  // ✅ Handle input
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const payload = {
-      type,
-      ...formData,
-      unit: getUnit(),
-    };
-
+    const payload = { type, ...formData, unit: getUnit() };
     try {
       await axios.post("http://localhost:5000/api/readings", payload);
-
       alert("Relevé enregistré ✅");
-
-      // reset form
-      setFormData({
-        value: "",
-        date: new Date().toISOString().split("T")[0],
-        notes: "",
-      });
-
-      // 🔥 refresh list
+      setFormData({ value: "", date: new Date().toISOString().split("T")[0], notes: "" });
       fetchData();
-
-      // 🔥 redirect (optionnel)
-      // navigate("/dashboard");
-
     } catch (err) {
       console.log(err);
       alert("Erreur ❌");
     }
   };
 
-  // ✅ Unit
-  const getUnit = () => {
-    if (type === "Energie") return "kWh";
-    if (type === "Eau") return "m³";
-    return "kg";
-  };
+  const getUnit = () => (type === "Energie" ? "kWh" : type === "Eau" ? "m³" : "kg");
 
-  // ✅ Icon
   const getIcon = (type) => {
     if (type === "Energie") return <Zap className="text-yellow-500" size={18} />;
     if (type === "Eau") return <Droplets className="text-blue-500" size={18} />;
@@ -99,14 +63,13 @@ export default function AddRecord() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* HEADER */}
-      <header className="bg-white py-4 text-center border-b font-bold text-xl">
-        GreenLife - Nouveau Relevé
-      </header>
-
+      {/* TITRE DANS MAIN, pas dans header */}
       <main className="max-w-5xl mx-auto p-8">
 
-        {/* 🔥 BACK BUTTON */}
+        <h1 className="text-2xl font-bold text-center mb-8">
+          GreenLife - Nouveau Relevé
+        </h1>
+
         <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 text-emerald-600 font-bold mb-8 hover:underline"
@@ -118,18 +81,10 @@ export default function AddRecord() {
 
           {/* FORM */}
           <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow border">
-            <h2 className="text-2xl font-bold mb-6">
-              Enregistrer un relevé
-            </h2>
-
+            <h2 className="text-2xl font-bold mb-6">Enregistrer un relevé</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
-
-              {/* TYPE */}
               <div>
-                <label className="block text-sm mb-3">
-                  Type de consommation
-                </label>
-
+                <label className="block text-sm mb-3">Type de consommation</label>
                 <div className="grid grid-cols-3 gap-4">
                   <TypeButton active={type==="Energie"} onClick={()=>setType("Energie")} icon={<Zap size={22}/>} label="Énergie"/>
                   <TypeButton active={type==="Eau"} onClick={()=>setType("Eau")} icon={<Droplets size={22}/>} label="Eau"/>
@@ -137,34 +92,15 @@ export default function AddRecord() {
                 </div>
               </div>
 
-              {/* VALUE */}
-              <input
-                type="number"
-                name="value"
-                value={formData.value}
-                onChange={handleChange}
-                className="w-full p-4 border rounded-xl bg-gray-50"
-                placeholder={`Valeur (${getUnit()})`}
-                required
-              />
+              <input type="number" name="value" value={formData.value} onChange={handleChange}
+                     className="w-full p-4 border rounded-xl bg-gray-50"
+                     placeholder={`Valeur (${getUnit()})`} required />
 
-              {/* DATE */}
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full p-4 border rounded-xl bg-gray-50"
-              />
+              <input type="date" name="date" value={formData.date} onChange={handleChange}
+                     className="w-full p-4 border rounded-xl bg-gray-50" />
 
-              {/* NOTES */}
-              <textarea
-                name="notes"
-                value={formData.notes}
-                onChange={handleChange}
-                placeholder="Notes..."
-                className="w-full p-4 border rounded-xl bg-gray-50 h-28"
-              />
+              <textarea name="notes" value={formData.notes} onChange={handleChange}
+                        placeholder="Notes..." className="w-full p-4 border rounded-xl bg-gray-50 h-28" />
 
               <button className="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold hover:bg-emerald-700">
                 Enregistrer
@@ -175,24 +111,16 @@ export default function AddRecord() {
           {/* RECENT */}
           <div className="bg-white p-6 rounded-2xl shadow border h-fit">
             <h3 className="font-bold mb-6">Relevés récents</h3>
-
             {loading ? (
               <p>Loading...</p>
             ) : (
               <div className="space-y-4">
                 {recentReadings.map((r, i) => (
                   <div key={i} className="flex items-center gap-4 p-4 border rounded-xl">
-                    <div className="p-2 bg-gray-100 rounded">
-                      {getIcon(r.type)}
-                    </div>
-
+                    <div className="p-2 bg-gray-100 rounded">{getIcon(r.type)}</div>
                     <div>
-                      <p className="font-bold">
-                        {r.value} {r.unit}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {r.date}
-                      </p>
+                      <p className="font-bold">{r.value} {r.unit}</p>
+                      <p className="text-xs text-gray-400">{r.date}</p>
                     </div>
                   </div>
                 ))}
@@ -206,20 +134,9 @@ export default function AddRecord() {
   );
 }
 
-// Button Component
-const TypeButton = ({ active, onClick, icon, label }) => {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`p-4 rounded-xl border text-center transition ${
-        active
-          ? "border-emerald-500 bg-emerald-50 text-emerald-600"
-          : "border-gray-200 text-gray-400 hover:border-gray-300"
-      }`}
-    >
-      <div className="flex justify-center">{icon}</div>
-      <p className="text-sm font-bold mt-2">{label}</p>
-    </button>
-  );
-};
+const TypeButton = ({ active, onClick, icon, label }) => (
+  <button type="button" onClick={onClick} className={`p-4 rounded-xl border text-center transition ${active ? "border-emerald-500 bg-emerald-50 text-emerald-600" : "border-gray-200 text-gray-400 hover:border-gray-300"}`}>
+    <div className="flex justify-center">{icon}</div>
+    <p className="text-sm font-bold mt-2">{label}</p>
+  </button>
+);

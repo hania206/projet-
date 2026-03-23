@@ -5,18 +5,13 @@ import {
   Trash2,
   Award,
   CheckCircle,
-  User,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export default function Objectives() {
-  const navigate = useNavigate();
-
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FETCH
   useEffect(() => {
     fetchObjectives();
   }, []);
@@ -50,7 +45,6 @@ export default function Objectives() {
   if (loading)
     return <div className="p-10 text-center">Chargement...</div>;
 
-  // 🎯 helpers
   const getIcon = (type) => {
     if (type === "energy") return <Zap />;
     if (type === "water") return <Droplets />;
@@ -67,43 +61,6 @@ export default function Objectives() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* NAV */}
-      <nav className="bg-white px-12 py-4 flex justify-between border-b">
-        <h1
-          onClick={() => navigate("/")}
-          className="text-2xl font-bold text-emerald-600 cursor-pointer"
-        >
-          GreenLife
-        </h1>
-
-        <div className="flex gap-8 text-gray-500">
-          <button onClick={() => navigate("/dashboard")}>
-            Dashboard
-          </button>
-
-          <button onClick={() => navigate("/add-record")}>
-            Relevés
-          </button>
-
-          <button
-            className="text-emerald-600 border-b-2 border-emerald-600"
-          >
-            Objectifs
-          </button>
-
-          <button onClick={() => navigate("/alerts")}>
-            Alertes
-          </button>
-        </div>
-
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-emerald-600 text-white px-5 py-2 rounded-full flex gap-2"
-        >
-          <User size={18} /> Mon compte
-        </button>
-      </nav>
-
       <main className="max-w-7xl mx-auto p-8">
 
         <h2 className="text-3xl font-bold mb-10">
@@ -119,7 +76,7 @@ export default function Objectives() {
             const remaining = (goal.target - goal.current).toFixed(1);
 
             return (
-              <div key={goal.id} className="bg-white p-6 rounded-xl shadow hover:shadow-lg transition">
+              <div key={goal.id} className="bg-white p-6 rounded-xl shadow">
 
                 <div className="flex gap-4 mb-4">
                   <div className="p-3 bg-gray-100 rounded-xl">
@@ -139,7 +96,6 @@ export default function Objectives() {
                   <span>{goal.target}%</span>
                 </div>
 
-                {/* PROGRESS */}
                 <div className="w-full bg-gray-200 h-3 rounded-full mb-3">
                   <div
                     className={`h-3 rounded-full ${getColor(goal.type)}`}
@@ -160,7 +116,7 @@ export default function Objectives() {
           {data.badges.map((b) => (
             <div
               key={b.id}
-              className={`p-6 rounded-xl text-center transition ${
+              className={`p-6 rounded-xl text-center ${
                 b.obtained
                   ? "bg-green-50 border border-green-200"
                   : "bg-gray-100 opacity-60"

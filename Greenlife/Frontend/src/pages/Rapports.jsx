@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Download, Plus, User, FileSpreadsheet } from "lucide-react";
+import { FileText, Download, Plus, FileSpreadsheet } from "lucide-react";
 import axios from "axios";
 
 export default function Reports() {
@@ -12,7 +12,6 @@ export default function Reports() {
     dechets: true,
   });
 
-  // ✅ API CALL
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -21,21 +20,19 @@ export default function Reports() {
       } catch (err) {
         console.log(err);
 
-        // fallback
         setReports([
           { id: 1, title: "Rapport Février", date: "15 fév 2024", size: "2.4 MB", type: "pdf" },
           { id: 2, title: "Rapport Janvier", date: "15 jan 2024", size: "2.1 MB", type: "pdf" },
           { id: 3, title: "Export 2023", date: "31 déc 2023", size: "1.8 MB", type: "csv" },
         ]);
       } finally {
-        setLoading(false); // ✅ مهم
+        setLoading(false);
       }
     };
 
     fetchReports();
   }, []);
 
-  // ✅ toggle checkbox
   const handleExportToggle = (option) => {
     setExportOptions((prev) => ({
       ...prev,
@@ -43,52 +40,21 @@ export default function Reports() {
     }));
   };
 
-  // ✅ download file
   const handleDownload = (report) => {
     alert(`Téléchargement: ${report.title}`);
-    // هنا تنجم تربطها بالbackend:
     // window.open(`http://localhost:5000/api/download/${report.id}`);
   };
 
-  // ✅ generate report
   const handleGenerate = async () => {
-    try {
-      alert("Génération du rapport...");
-      // await axios.post("http://localhost:5000/api/generate-report");
-    } catch (err) {
-      console.log(err);
-    }
+    alert("Génération du rapport...");
   };
 
-  // ✅ export CSV
   const handleExport = async () => {
-    try {
-      alert("Export CSV...");
-      // await axios.post("http://localhost:5000/api/export", exportOptions);
-    } catch (err) {
-      console.log(err);
-    }
+    alert("Export CSV...");
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      {/* NAV */}
-      <nav className="bg-white px-12 py-4 flex justify-between border-b">
-        <h1 className="text-2xl font-bold text-emerald-600">GreenLife</h1>
-
-        <div className="flex gap-8 text-gray-500">
-          <a>Dashboard</a>
-          <a>Relevés</a>
-          <a className="text-emerald-600 border-b-2 border-emerald-600">
-            Rapports
-          </a>
-        </div>
-
-        <button className="bg-emerald-600 text-white px-5 py-2 rounded-full flex gap-2">
-          <User size={18} /> Mon compte
-        </button>
-      </nav>
 
       <main className="max-w-6xl mx-auto p-8">
 
@@ -180,7 +146,7 @@ export default function Reports() {
   );
 }
 
-// ✅ Checkbox FIXED
+// COMPONENT
 const Checkbox = ({ label, checked, onChange }) => (
   <label className="flex items-center gap-2 cursor-pointer">
     <input type="checkbox" checked={checked} onChange={onChange} />

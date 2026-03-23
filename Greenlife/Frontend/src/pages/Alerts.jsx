@@ -1,196 +1,104 @@
-import React, { useState, useEffect } from "react";
-import { Zap, Droplets, Trash2, User, AlertTriangle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useState } from 'react';
+import { Zap, Droplets, Trash2, AlertTriangle } from 'lucide-react';
 
-export default function Alerts() {
-  const navigate = useNavigate();
+export default function Alerts ()  {
+  const [thresholds, setThresholds] = useState([
+    { id: 'energy', label: 'Énergie', current: 1250, unit: 'kWh', limit: 1500, active: true, icon: <Zap size={20} className="text-yellow-500" /> },
+    { id: 'water', label: 'Eau', current: 45, unit: 'm³', limit: 60, active: true, icon: <Droplets size={20} className="text-blue-500" /> },
+    { id: 'waste', label: 'Déchets', current: 12, unit: 'kg', limit: 20, active: true, icon: <Trash2 size={20} className="text-orange-600" /> }
+  ]);
 
-  const [thresholds, setThresholds] = useState([]);
-  const [recentAlerts, setRecentAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [recentAlerts] = useState([
+    { id: 1, type: 'Énergie', msg: 'Consommation élevée détectée', date: '10 fév 2024 à 18:30', critical: true },
+    { id: 2, type: 'Eau', msg: 'Seuil d\'eau approché', date: '8 fév 2024 à 14:15', critical: false }
+  ]);
 
-  // ✅ FETCH DATA
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const res1 = await axios.get("http://localhost:5000/api/thresholds");
-      const res2 = await axios.get("http://localhost:5000/api/alerts");
-
-      setThresholds(res1.data);
-      setRecentAlerts(res2.data);
-    } catch (err) {
-      console.log(err);
-
-      // fallback
-      setThresholds([
-        { id: "energy", label: "Énergie", current: 1250, unit: "kWh", limit: 1500, active: true, type: "energy" },
-        { id: "water", label: "Eau", current: 45, unit: "m³", limit: 60, active: true, type: "water" },
-        { id: "waste", label: "Déchets", current: 12, unit: "kg", limit: 20, active: true, type: "waste" },
-      ]);
-
-      setRecentAlerts([
-        { id: 1, type: "Énergie", msg: "Consommation élevée", date: "10 fév", critical: true },
-        { id: 2, type: "Eau", msg: "Seuil proche", date: "8 fév", critical: false },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ✅ ICON
-  const getIcon = (type) => {
-    if (type === "energy") return <Zap className="text-yellow-500" />;
-    if (type === "water") return <Droplets className="text-blue-500" />;
-    return <Trash2 className="text-orange-500" />;
-  };
-
-  // ✅ TOGGLE
+  // Fonction pour toggle active
   const handleToggle = (id) => {
-    setThresholds((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, active: !t.active } : t
-      )
-    );
+    setThresholds(prev => prev.map(t => t.id === id ? { ...t, active: !t.active } : t));
   };
 
-  // ✅ CHANGE LIMIT
+  // Fonction pour changer la limite
   const handleLimitChange = (id, value) => {
-    setThresholds((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, limit: Number(value) } : t
-      )
-    );
+    setThresholds(prev => prev.map(t => t.id === id ? { ...t, limit: Number(value) } : t));
   };
-
-  // ✅ SAVE
-  const handleSave = async () => {
-    try {
-      await axios.post("http://localhost:5000/api/thresholds", thresholds);
-      alert("Sauvegardé ✅");
-    } catch (err) {
-      console.log(err);
-      alert("Erreur ❌");
-    }
-  };
-
-  if (loading)
-    return <div className="p-10 text-center">Chargement...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-w-6xl mx-auto px-6 py-12">
+      <h2 className="text-3xl font-black text-gray-900 mb-10 text-center">Gestion des alertes</h2>
 
-      {/* NAV */}
-      <nav className="bg-white px-12 py-4 flex justify-between border-b">
-        <h1
-          onClick={() => navigate("/")}
-          className="text-2xl font-bold text-emerald-600 cursor-pointer"
-        >
-          GreenLife
-        </h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Colonne Gauche : Configuration des Seuils */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-8 rounded-[24px] shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold mb-8">Seuils</h3>
+            
+            <div className="space-y-8">
+              {thresholds.map((t) => (
+                <div key={t.id} className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      {t.icon}
+                      <div>
+                        <h4 className="font-bold text-gray-800">{t.label}</h4>
+                        <p className="text-xs text-gray-400">Valeur actuelle: {t.current} {t.unit}</p>
+                      </div>
+                    </div>
 
-        <div className="flex gap-8 text-gray-500">
-          <button onClick={() => navigate("/dashboard")}>
-            Dashboard
-          </button>
-
-          <button onClick={() => navigate("/add-record")}>
-            Relevés
-          </button>
-
-          <button className="text-emerald-600 border-b-2 border-emerald-600">
-            Alertes
-          </button>
-        </div>
-
-        <button
-          onClick={() => navigate("/login")}
-          className="bg-emerald-600 text-white px-5 py-2 rounded-full flex gap-2"
-        >
-          <User size={18} /> Mon compte
-        </button>
-      </nav>
-
-      <main className="max-w-6xl mx-auto p-8">
-
-        <h2 className="text-3xl font-bold mb-10">
-          Gestion des alertes
-        </h2>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-
-          {/* LEFT */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow">
-            <h3 className="font-bold mb-6">Seuils</h3>
-
-            {thresholds.map((t) => (
-              <div key={t.id} className="mb-6">
-
-                <div className="flex justify-between mb-2">
-                  <div className="flex gap-3 items-center">
-                    {getIcon(t.type)}
-                    <span>{t.label}</span>
+                    {/* Switch Toggle */}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={t.active}
+                        className="sr-only peer"
+                        onChange={() => handleToggle(t.id)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-emerald-500 relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full" />
+                    </label>
                   </div>
 
-                  <button
-                    onClick={() => handleToggle(t.id)}
-                    className={`w-12 h-6 rounded-full transition ${
-                      t.active ? "bg-green-500" : "bg-gray-300"
-                    }`}
+                  <input 
+                    type="number" 
+                    value={t.limit}
+                    onChange={(e) => handleLimitChange(t.id, e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-700 outline-none focus:ring-2 focus:ring-emerald-500 transition"
                   />
+                  
+                  {t.active && t.current >= t.limit && (
+                    <div className="flex items-center gap-2 text-red-500 text-xs font-bold">
+                      <AlertTriangle size={14} /> Alerte active
+                    </div>
+                  )}
                 </div>
+              ))}
+            </div>
 
-                <input
-                  type="number"
-                  value={t.limit}
-                  onChange={(e) =>
-                    handleLimitChange(t.id, e.target.value)
-                  }
-                  className="w-full border p-2 rounded"
-                />
-
-                {t.active && t.current >= t.limit && (
-                  <p className="text-red-500 text-xs flex gap-1 mt-1">
-                    <AlertTriangle size={14} /> Alerte
-                  </p>
-                )}
-              </div>
-            ))}
-
-            <button
-              onClick={handleSave}
-              className="w-full bg-emerald-600 text-white py-3 rounded-lg hover:bg-emerald-700"
-            >
+            <button className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold mt-10 hover:bg-emerald-700 transition">
               Enregistrer
             </button>
           </div>
-
-          {/* RIGHT */}
-          <div className="bg-white p-6 rounded-xl shadow">
-            <h3 className="font-bold mb-6">Alertes récentes</h3>
-
-            {recentAlerts.length === 0 ? (
-              <p className="text-gray-400">Aucune alerte</p>
-            ) : (
-              recentAlerts.map((a) => (
-                <div
-                  key={a.id}
-                  className={`p-4 mb-3 rounded ${
-                    a.critical ? "bg-red-100" : "bg-gray-100"
-                  }`}
-                >
-                  <p className="font-bold">{a.msg}</p>
-                  <p className="text-xs text-gray-500">{a.date}</p>
-                </div>
-              ))
-            )}
-          </div>
-
         </div>
-      </main>
+
+        {/* Colonne Droite : Alertes récentes */}
+        <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100 h-fit">
+          <h3 className="font-bold text-lg mb-6">Alertes récentes</h3>
+          <div className="space-y-4">
+            {recentAlerts.map((a) => (
+              <div key={a.id} className={`p-4 rounded-xl ${a.critical ? 'bg-red-50 border border-red-100' : 'bg-gray-50 border border-gray-100'}`}>
+                <div className="flex justify-between items-center mb-1">
+                  <span className={`text-[10px] font-bold uppercase ${a.critical ? 'text-red-600' : 'text-gray-500'}`}>{a.type}</span>
+                  {a.critical && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                </div>
+                <p className="text-sm font-bold text-gray-800">{a.msg}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{a.date.split(' à ')[0]}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
-}
+};
+

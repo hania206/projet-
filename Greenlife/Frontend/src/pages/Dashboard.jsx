@@ -4,7 +4,6 @@ import {
   Droplets,
   Trash2,
   Plus,
-  User,
   TrendingDown,
 } from "lucide-react";
 import {
@@ -25,7 +24,6 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FETCH
   useEffect(() => {
     fetchData();
   }, []);
@@ -37,7 +35,6 @@ export default function Dashboard() {
     } catch (err) {
       console.log(err);
 
-      // fallback
       setData({
         stats: [
           { id: 1, type: "Énergie", current: 1250, unit: "kWh", lastMonth: 1400, trend: "10.7%", color: "green" },
@@ -66,7 +63,6 @@ export default function Dashboard() {
       </div>
     );
 
-  // 🎨 styles
   const getBorderColor = (color) => {
     if (color === "green") return "border-green-500";
     if (color === "blue") return "border-blue-500";
@@ -88,60 +84,14 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
 
-      {/* TOP */}
-      <div className="bg-emerald-900 text-white text-center py-2 text-xs">
-        © 2026 GreenLife
-      </div>
-
-      {/* NAV */}
-      <header className="bg-white px-12 py-4 shadow border-b">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-
-          <div className="flex gap-12 items-center">
-            <h1
-              onClick={() => navigate("/")}
-              className="text-2xl font-bold text-emerald-600 cursor-pointer"
-            >
-              GreenLife
-            </h1>
-
-            <nav className="flex gap-8 text-gray-600">
-              <button className="text-emerald-600 border-b-2 border-emerald-600 pb-1">
-                Dashboard
-              </button>
-
-              <button onClick={() => navigate("/add-record")}>
-                Relevés
-              </button>
-
-              <button onClick={() => navigate("/objectives")}>
-                Objectifs
-              </button>
-
-              <button onClick={() => navigate("/alerts")}>
-                Alertes
-              </button>
-            </nav>
-          </div>
-
-          <button
-            onClick={() => navigate("/login")}
-            className="bg-emerald-600 text-white px-5 py-2 rounded-full flex gap-2"
-          >
-            <User size={18} /> Mon compte
-          </button>
-        </div>
-      </header>
-
+      {/* CONTENT ONLY */}
       <main className="max-w-7xl mx-auto px-12 py-10">
 
-        {/* HEADER */}
         <div className="flex justify-between mb-8">
           <h2 className="text-3xl font-bold">
             Suivi de consommation
           </h2>
 
-          {/* 🔥 BUTTON WORKING */}
           <button
             onClick={() => navigate("/add-record")}
             className="bg-emerald-600 text-white px-4 py-2 rounded-lg flex gap-2 hover:bg-emerald-700"
@@ -150,7 +100,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* STATS */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {data.stats.map((item) => (
             <div
@@ -180,7 +129,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* CHART */}
         <div className="bg-white p-8 rounded-2xl shadow mb-10">
           <h3 className="font-bold mb-6">Évolution</h3>
 
@@ -199,7 +147,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* IMPACT */}
         <div className="grid md:grid-cols-3 gap-6">
           <ImpactItem label="CO2 évité" value={data.impact.co2} />
           <ImpactItem label="Économies" value={data.impact.economies} />
@@ -211,7 +158,6 @@ export default function Dashboard() {
   );
 }
 
-// COMPONENT
 const ImpactItem = ({ label, value }) => (
   <div className="bg-white p-6 rounded-xl shadow text-center">
     <p className="text-gray-400 text-sm">{label}</p>
