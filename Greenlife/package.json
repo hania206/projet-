@@ -1,0 +1,25 @@
+{
+  "name": "greenlife",
+  "version": "1.0.0",
+  "description": "Project GreenLife - Ecological Monitoring System",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "backend": "npm run dev --prefix mon-projet",
+    "frontend": "npm run dev --prefix Frontend",
+    "start": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "framer-motion": "^12.38.0",
+    "json2csv": "^6.0.0-alpha.2",
+    "recharts": "^3.8.1"
+  }
+}
