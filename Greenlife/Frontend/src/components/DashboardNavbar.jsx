@@ -1,73 +1,107 @@
-import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  Target, 
-  Bell, 
-  FileText, 
-  Lightbulb 
-} from "lucide-react";
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function DashboardNavbar() {
-  const navigate = useNavigate();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // On garde seulement les liens qui ne sont pas "Statistiques" ou "Paramètres"
   const menuItems = [
-    { name: "Dashboard", path: "/dashboard", icon: <LayoutDashboard size={16}/> },
-    { name: "Relevés", path: "/add-record", icon: <PlusCircle size={16}/> },
-    { name: "Objectifs", path: "/objectives", icon: <Target size={16}/> },
-    { name: "Alertes", path: "/alerts", icon: <Bell size={16}/> },
-    { name: "Rapports", path: "/rapports", icon: <FileText size={16}/> },
-    { name: "Conseils", path: "/recommandations", icon: <Lightbulb size={16}/> },
+    { path: "/dashboard", label: "📊 Dashboard" },
+    { path: "/add-record", label: "➕ Ajouter un record" },
+    { path: "/objectives", label: "🎯 Objectifs" },
+    { path: "/alerts", label: "⚠️ Alertes" },
+    { path: "/rapports", label: "📄 Rapports" },
+    { path: "/recommandations", label: "💡 Recommandations" },
   ];
 
-  const linkClass = (path) =>
-    location.pathname === path
-      ? "text-emerald-600 border-b-2 border-emerald-600 pb-1 font-bold flex items-center gap-2"
-      : "text-gray-500 hover:text-emerald-600 transition-colors flex items-center gap-2";
-
   return (
-    <header className="bg-white px-8 py-4 shadow-sm border-b sticky top-0 z-50">
-      <div className="max-w-[1600px] mx-auto flex justify-between items-center">
+    <nav className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-2xl">🌿</span>
+            <span className="text-xl font-bold text-green-600">GreenLife</span>
+          </Link>
 
-        {/* LOGO & NAVIGATION CENTRALE */}
-        <div className="flex gap-10 items-center">
-          <h1
-            onClick={() => navigate("/dashboard")}
-            className="text-2xl font-black text-emerald-600 cursor-pointer tracking-tighter flex items-center gap-2"
-          >
-            <div className="bg-emerald-600 p-1.5 rounded-lg text-white">
-               <span className="block w-4 h-4 bg-white rounded-full opacity-20"></span>
-            </div>
-            GreenLife
-          </h1>
-
-          <nav className="hidden xl:flex gap-8 text-sm font-medium">
+          {/* Menu desktop */}
+          <div className="hidden lg:flex items-center gap-1">
             {menuItems.map((item) => (
-              <button
+              <Link
                 key={item.path}
-                onClick={() => navigate(item.path)}
-                className={linkClass(item.path)}
+                to={item.path}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                  location.pathname === item.path
+                    ? "bg-green-100 text-green-700"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                }`}
               >
-                {item.name}
-              </button>
+                {item.label}
+              </Link>
             ))}
-          </nav>
-        </div>
+          </div>
 
-        {/* SECTION DROITE (Espace vide ou bouton d'ajout rapide uniquement) */}
-        <div className="flex items-center gap-4">
+          {/* Déconnexion */}
+          <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={() => {
+                localStorage.removeItem("userInfo");
+                navigate("/login");
+              }}
+              className="text-gray-600 hover:text-red-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              🚪 Déconnexion
+            </button>
+          </div>
+
+          {/* Menu mobile */}
           <button
-            onClick={() => navigate("/add-record")}
-            className="hidden sm:flex bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl items-center gap-2 hover:bg-emerald-100 transition-all font-bold text-xs uppercase tracking-widest"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
           >
-            <PlusCircle size={16} /> 
-            Nouveau
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
           </button>
         </div>
 
+        {/* Menu mobile */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-gray-200 py-3">
+            <div className="flex flex-col gap-1">
+              {menuItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === item.path
+                      ? "bg-green-100 text-green-700"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  localStorage.removeItem("userInfo");
+                  navigate("/login");
+                }}
+                className="px-4 py-3 text-left text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors mt-2"
+              >
+                🚪 Déconnexion
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </header>
+    </nav>
   );
 }

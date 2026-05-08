@@ -1,129 +1,144 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import { 
+  ArrowRight, Lock, Sparkles, TrendingUp, Users, Globe
+} from "lucide-react";
 
 export default function Home() {
-  const [stats, setStats] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Vérifier si utilisateur est connecté
-  const isLoggedIn = !!localStorage.getItem("userInfo");
-
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/stats")
-      .then((res) => {
-        setStats(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Erreur API:", err);
-        setLoading(false);
-      });
-  }, []);
-
-  // Redirection selon connexion
-  const handleNavigate = (path) => {
-    if (isLoggedIn) {
-      navigate(path);
-    } else {
-      navigate("/login");
-    }
-  };
+  const features = [
+    { icon: <Sparkles size={20} />, title: "IA Prédictive", desc: "Analyse intelligente de vos consommations" },
+    { icon: <TrendingUp size={20} />, title: "Suivi Temps Réel", desc: "Dashboard dynamique et interactif" },
+    { icon: <Users size={20} />, title: "Communauté", desc: "Classement et défis entre utilisateurs" },
+    { icon: <Globe size={20} />, title: "Écologie", desc: "Réduisez votre empreinte carbone" },
+  ];
 
   return (
-    <div className="font-sans text-gray-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 flex flex-col justify-center">
+      
+      <div className="max-w-7xl mx-auto px-6 py-12 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* LEFT - TEXT CONTENT */}
+          <div className="space-y-8">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold border border-emerald-200">
+              <Sparkles size={14} className="text-emerald-500" />
+              <span>Propulsé par l'Intelligence Artificielle</span>
+            </div>
 
-      {/* HERO SECTION */}
-      <section className="relative h-[500px] flex items-center justify-center bg-gradient-to-r from-green-400 to-teal-500">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1507089947368-19c1da9775ae"
-            alt="Maison verte"
-            className="w-full h-full object-cover brightness-50"
-          />
-        </div>
-        <div className="relative text-center max-w-3xl px-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-snug">
-            Votre voyage vers une maison{" "}
-            <span className="text-green-300">plus verte</span> commence ici
-          </h1>
-          <p className="text-white/90 mb-6 text-lg">
-            Suivi énergie & eau, conseils IA, objectifs et impact carbone en temps réel.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => handleNavigate("/dashboard")}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition shadow-lg"
-            >
-              Start Tracking
-            </button>
-            <button
-              onClick={() => handleNavigate("/objectives")}
-              className="border border-white hover:bg-white hover:text-gray-900 text-white px-6 py-3 rounded-lg font-medium transition"
-            >
-              Voir l'impact
-            </button>
+            {/* Title */}
+            <div className="space-y-4">
+              <h1 className="text-5xl md:text-7xl font-black text-slate-900 leading-[1.1]">
+                Votre impact
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-green-500">
+                  écologique
+                </span>
+                <br />
+                simplifié
+              </h1>
+              <p className="text-lg text-slate-500 max-w-lg leading-relaxed">
+                Suivez, analysez et réduisez votre consommation d'énergie, d'eau et de déchets grâce à notre plateforme intelligente.
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button 
+                onClick={() => navigate("/login")}
+                className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 group"
+              >
+                Se connecter
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <button 
+                onClick={() => navigate("/register")}
+                className="border-2 border-slate-200 text-slate-700 px-8 py-4 rounded-2xl font-bold text-lg hover:border-emerald-300 hover:text-emerald-600 transition-all"
+              >
+                Créer un compte
+              </button>
+            </div>
+          </div>
+
+          {/* RIGHT - VISUAL CARD */}
+          <div className="relative">
+            {/* Background decoration */}
+            <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald-200 rounded-full blur-[100px] opacity-50" />
+            <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-200 rounded-full blur-[100px] opacity-50" />
+            
+            {/* Card */}
+            <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-slate-100">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <Lock className="text-emerald-600" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800">Espace Sécurisé</h3>
+                    <p className="text-sm text-slate-400">Connexion requise</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <input 
+                    type="email" 
+                    placeholder="votre@email.com" 
+                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+                    onClick={() => navigate("/login")}
+                    readOnly
+                  />
+                  <input 
+                    type="password" 
+                    placeholder="Mot de passe" 
+                    className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-200 text-sm outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+                    onClick={() => navigate("/login")}
+                    readOnly
+                  />
+                  <button 
+                    onClick={() => navigate("/login")}
+                    className="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all"
+                  >
+                    Se connecter
+                  </button>
+                </div>
+
+                <p className="text-center text-sm text-slate-400">
+                  Pas encore de compte ?{" "}
+                  <button onClick={() => navigate("/register")} className="text-emerald-600 font-medium hover:underline">
+                    S'inscrire
+                  </button>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </section>
 
-      {/* STATS */}
-      <section className="py-16 bg-gray-50 px-6">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 text-center">
-          {loading ? (
-            <p className="col-span-3 text-gray-500">Chargement...</p>
-          ) : stats.length > 0 ? (
-            stats.map((item, idx) => (
-              <div
-                key={idx}
-                className="bg-white rounded-xl shadow-md p-6 transform hover:scale-105 transition"
-              >
-                <h2 className="text-3xl font-extrabold text-green-600">{item.value}</h2>
-                <p className="text-gray-500 mt-1">{item.label}</p>
+        {/* FEATURES SECTION */}
+        <div className="mt-24 pt-16 border-t border-slate-200">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              Pourquoi nous choisir ?
+            </h2>
+            <p className="text-slate-500 max-w-2xl mx-auto">
+              Une plateforme complète pour comprendre et réduire votre impact environnemental
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, index) => (
+              <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md hover:border-emerald-200 transition-all group">
+                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 mb-4 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                  {feature.icon}
+                </div>
+                <h3 className="font-bold text-slate-800 mb-2">{feature.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{feature.desc}</p>
               </div>
-            ))
-          ) : (
-            <p className="col-span-3 text-gray-500">Aucune statistique disponible</p>
-          )}
+            ))}
+          </div>
         </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="py-16 px-6">
-        <h2 className="text-3xl font-extrabold text-center mb-12">
-          Comment GreenLife Vous Aide
-        </h2>
-        <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-          <FeatureCard
-            icon="🌿"
-            title="Suivi Intuitif"
-            description="Enregistrez facilement votre consommation d'eau et d'électricité."
-          />
-          <FeatureCard
-            icon="⚡"
-            title="Analyse IA"
-            description="Identifiez les pics de consommation grâce à l'IA."
-          />
-          <FeatureCard
-            icon="💚"
-            title="Conseils Personnalisés"
-            description="Recevez des recommandations pour économiser énergie et argent."
-          />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// --- FEATURE CARD ---
-function FeatureCard({ icon, title, description }) {
-  return (
-    <div className="bg-white rounded-xl shadow-md p-8 flex flex-col items-center text-center hover:shadow-xl transform hover:-translate-y-2 transition">
-      <div className="text-green-500 text-4xl mb-4">{icon}</div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-gray-500">{description}</p>
+      </div>
     </div>
   );
 }

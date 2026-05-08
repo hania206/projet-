@@ -1,366 +1,423 @@
-import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Users, Leaf, LogOut, Loader2, Trash2, 
-  Plus, Pencil, Search, X, ShieldCheck, UserPlus
+import { 
+  Users, UserCheck, Shield, Activity,
+  Trash2, LogOut, Search, UserPlus, 
+  X, CheckCircle, AlertCircle, RefreshCw,
+  Mail, Lock, User
 } from "lucide-react";
+import axios from "axios";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-
-  // États pour les données
+  const [stats, setStats] = useState({ totalUsers: 0, admins: 0, clients: 0 });
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
-  
-  // États de l'interface
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("all");
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUser, setNewUser] = useState({ nom: "", prenom: "", email: "", mdp: "", role: "client" });
+  const [addingUser, setAddingUser] = useState(false);
 
-  // État du formulaire
-  const [formUser, setFormUser] = useState({
-    _id: "",
-    nom: "",
-    prenom: "",
-    email: "",
-    mdp: "",
-    role: "client",
-  });
+  useEffect(() => {
+    checkAdminAccess();
+    fetchStats();
+    fetchUsers();
+  }, []);
 
-  const API = "http://localhost:5000/api";
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredUsers(users);
+    } else {
+      const term = searchTerm.toLowerCase();
+      setFilteredUsers(users.filter(user => 
+        user.nom?.toLowerCase().includes(term) ||
+        user.prenom?.toLowerCase().includes(term) ||
+        user.email?.toLowerCase().includes(term)
+      ));
+    }
+  }, [searchTerm, users]);
 
-  // ================= RÉCUPÉRATION DES DONNÉES =================
-  const fetchData = useCallback(async () => {
+  const checkAdminAccess = () => {
     try {
-      setLoading(true);
-      setError("");
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const role = userInfo.user?.role || userInfo.role;
+      if (role !== "admin") {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      console.error("Erreur checkAdminAccess:", err.message);
+      navigate("/login");
+    }
+  };
 
-      const stored = localStorage.getItem("userInfo");
-      if (!stored) return navigate("/login");
+  const getToken = () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      return userInfo.token || null;
+    } catch (err) {
+      console.error("Erreur getToken:", err.message);
+      return null;
+    }
+  };
 
-      const user = JSON.parse(stored);
-
-      if (!user?.token || user?.role !== "admin") {
-        return navigate("/dashboard");
+  const fetchStats = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        navigate("/login");
+        return;
       }
 
-      const res = await axios.get(`${API}/users/all`, {
-        headers: { Authorization: `Bearer ${user.token}` },
+      const { data } = await axios.get("http://localhost:5000/api/users/stats/global", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (data?.stats) {
+        setStats(data.stats);
+      }
+    } catch (err) {
+      console.error("Erreur fetchStats:", err.message);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("userInfo");
+        navigate("/login");
+      }
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = getToken();
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const { data } = await axios.get("http://localhost:5000/api/users", {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      setUsers(res.data || []);
-      setFilteredUsers(res.data || []);
+      const list = data.users || (Array.isArray(data) ? data : []);
+      setUsers(list);
+      setFilteredUsers(list);
     } catch (err) {
-      console.error("FETCH ERROR:", err);
-      setError(err.response?.data?.message || "Erreur de chargement ❌");
+      console.error("Erreur fetchUsers:", err.message);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("userInfo");
+        navigate("/login");
+      } else if (err.response?.status === 403) {
+        setError("Accès refusé. Droits admin requis.");
+      } else if (err.request) {
+        setError("Serveur injoignable.");
+      } else {
+        setError(err.response?.data?.message || "Erreur chargement utilisateurs.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [navigate]);
+  };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // ================= FILTRAGE (RECHERCHE & RÔLE) =================
-  useEffect(() => {
-    let data = [...users];
-
-    if (search) {
-      data = data.filter(u =>
-        u.nom.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase()) ||
-        (u.prenom && u.prenom.toLowerCase().includes(search.toLowerCase()))
-      );
-    }
-
-    if (roleFilter !== "all") {
-      data = data.filter(u => u.role === roleFilter);
-    }
-
-    setFilteredUsers(data);
-  }, [search, roleFilter, users]);
-
-  // ================= SOUMISSION DU FORMULAIRE (CORRIGÉ) =================
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Supprimer cet utilisateur ?")) return;
 
     try {
-      const stored = localStorage.getItem("userInfo");
-      const admin = JSON.parse(stored);
-
-      // Préparation du Payload (données envoyées)
-      const payload = { ...formUser };
-      
-      if (editMode) {
-        // En mode édition, si le mot de passe est vide, on ne l'envoie pas
-        if (!payload.mdp) delete payload.mdp;
-        
-        await axios.put(`${API}/users/${formUser._id}`, payload, {
-          headers: { Authorization: `Bearer ${admin.token}` },
-        });
-      } else {
-        // En mode création, l'ID doit être supprimé pour laisser MongoDB le générer
-        delete payload._id;
-        
-        if (!payload.mdp) {
-          setError("Le mot de passe est requis pour un nouveau compte ❌");
-          return;
-        }
-
-        await axios.post(`${API}/users/register`, payload, {
-          headers: { Authorization: `Bearer ${admin.token}` },
-        });
+      const token = getToken();
+      if (!token) {
+        navigate("/login");
+        return;
       }
 
-      await fetchData(); // Rafraîchir la liste
-      closeModal();      // Fermer et réinitialiser
+      await axios.delete(`http://localhost:5000/api/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setUsers(prev => prev.filter(u => u._id !== userId));
+      fetchStats();
+      setSuccess("Utilisateur supprimé !");
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur lors de l'enregistrement ❌");
+      console.error("Erreur handleDeleteUser:", err.message);
+      if (err.response?.status === 401) {
+        localStorage.removeItem("userInfo");
+        navigate("/login");
+      } else if (err.response?.status === 404) {
+        setError("Utilisateur introuvable.");
+        fetchUsers();
+      } else if (err.request) {
+        setError("Serveur injoignable.");
+      } else {
+        setError(err.response?.data?.message || "Erreur suppression.");
+      }
     }
   };
 
-  // ================= SUPPRESSION =================
-  const deleteUser = async (id) => {
-    if (!window.confirm("Voulez-vous vraiment supprimer cet utilisateur ?")) return;
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!newUser.nom?.trim()) {
+      setError("Le nom est requis");
+      return;
+    }
+    if (!newUser.email?.trim()) {
+      setError("L'email est requis");
+      return;
+    }
+    if (!newUser.mdp?.trim()) {
+      setError("Le mot de passe est requis");
+      return;
+    }
+    if (newUser.mdp.trim().length < 6) {
+      setError("6 caractères minimum");
+      return;
+    }
 
     try {
-      const admin = JSON.parse(localStorage.getItem("userInfo"));
-      await axios.delete(`${API}/users/${id}`, {
-        headers: { Authorization: `Bearer ${admin.token}` },
-      });
-      setUsers(prev => prev.filter(u => u._id !== id));
+      setAddingUser(true);
+
+      const payload = {
+        nom: newUser.nom.trim(),
+        prenom: newUser.prenom.trim(),
+        email: newUser.email.trim().toLowerCase(),
+        mdp: newUser.mdp.trim(),
+        role: newUser.role
+      };
+
+      const { data } = await axios.post("http://localhost:5000/api/users/register", payload);
+
+      if (data.success) {
+        setSuccess(`"${newUser.nom}" ajouté !`);
+        setShowAddModal(false);
+        setNewUser({ nom: "", prenom: "", email: "", mdp: "", role: "client" });
+        fetchUsers();
+        fetchStats();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(data.message || "Erreur inconnue.");
+      }
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur de suppression ❌");
+      console.error("Erreur handleAddUser:", err.message);
+      if (err.response) {
+        setError(err.response.data?.message || `Erreur ${err.response.status}`);
+      } else if (err.request) {
+        setError("Serveur injoignable. Vérifiez que le backend est démarré.");
+      } else {
+        setError(err.message || "Erreur inconnue.");
+      }
+    } finally {
+      setAddingUser(false);
     }
-  };
-
-  // ================= GESTION MODAL =================
-  const openEditModal = (user) => {
-    setEditMode(true);
-    setFormUser({ ...user, mdp: "" }); // On ne charge pas le hash du mot de passe
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditMode(false);
-    setFormUser({ _id: "", nom: "", prenom: "", email: "", mdp: "", role: "client" });
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userInfo");
+    try {
+      localStorage.removeItem("userInfo");
+    } catch (err) {
+      console.error("Erreur handleLogout:", err.message);
+    }
     navigate("/login");
   };
 
-  if (loading) {
-    return (
-      <div className="h-screen flex flex-col justify-center items-center bg-green-50">
-        <Loader2 className="animate-spin text-green-600 w-16 h-16 mb-4" />
-        <p className="text-green-800 font-bold animate-pulse">Chargement de GreenLife...</p>
-      </div>
-    );
-  }
+  const statCards = [
+    { title: "Total", value: stats.totalUsers, icon: <Users size={24} className="text-white" />, color: "bg-blue-500" },
+    { title: "Admins", value: stats.admins, icon: <Shield size={24} className="text-white" />, color: "bg-purple-500" },
+    { title: "Clients", value: stats.clients, icon: <UserCheck size={24} className="text-white" />, color: "bg-emerald-500" }
+  ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      
-      {/* --- SIDEBAR --- */}
-      <aside className="w-72 bg-white shadow-2xl flex flex-col border-r border-green-100">
-        <div className="p-8">
-          <h1 className="text-3xl font-black text-green-600 flex items-center gap-2">
-            <Leaf className="w-8 h-8" /> GreenLife
-          </h1>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2">Administration</p>
-        </div>
-
-        <nav className="flex-1 px-4 space-y-2">
-          <div className="bg-green-600 text-white flex items-center gap-4 px-6 py-4 rounded-2xl font-bold shadow-lg shadow-green-200">
-            <Users /> Utilisateurs
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Shield className="text-purple-600" size={28} />
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">Administration</h1>
+              <p className="text-xs text-gray-500">Panneau de contrôle</p>
+            </div>
           </div>
-          {/* Autres liens futurs du projet GreenLife */}
-        </nav>
-
-        <div className="p-6 border-t border-gray-100">
-          <button onClick={handleLogout} className="flex items-center gap-3 w-full p-4 text-red-500 font-bold hover:bg-red-50 rounded-2xl transition-all">
-            <LogOut /> Déconnexion
+          <button onClick={handleLogout} className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg text-sm">
+            <LogOut size={16} /> Déconnexion
           </button>
         </div>
-      </aside>
+      </header>
 
-      {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 p-10 overflow-y-auto">
-        
-        {/* Header */}
-        <div className="flex justify-between items-end mb-10">
-          <div>
-            <h2 className="text-4xl font-black text-gray-800 tracking-tight">Gestion des Comptes</h2>
-            <p className="text-gray-500 mt-2 font-medium">Contrôlez les accès et les rôles de votre plateforme.</p>
-          </div>
-
-          <button
-            onClick={() => { setEditMode(false); setShowModal(true); }}
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-2xl flex items-center gap-3 font-bold shadow-xl shadow-green-100 transition-all transform hover:-translate-y-1"
-          >
-            <UserPlus /> Ajouter un membre
-          </button>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-8 rounded-r-xl flex items-center gap-3 shadow-sm">
-            <X className="bg-red-500 text-white rounded-full p-1 w-5 h-5" />
-            <p className="font-bold">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle size={20} /><span className="font-medium text-sm">{error}</span>
+            </div>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600"><X size={18} /></button>
           </div>
         )}
 
-        {/* FILTERS SECTION */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-8 flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom ou email..."
-              className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-green-500 transition-all outline-none font-medium"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <select 
-            className="px-6 py-4 bg-gray-50 border-none rounded-2xl font-bold text-gray-600 outline-none focus:ring-2 focus:ring-green-500"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-          >
-            <option value="all">Tous les rôles</option>
-            <option value="admin">Administrateurs</option>
-            <option value="client">Clients</option>
-          </select>
-        </div>
-
-        {/* TABLE SECTION */}
-        <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 text-gray-400 uppercase text-[11px] font-black tracking-[0.2em]">
-                <th className="px-10 py-6">Identité</th>
-                <th className="px-10 py-6">Coordonnées</th>
-                <th className="px-10 py-6">Rôle</th>
-                <th className="px-10 py-6 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filteredUsers.length > 0 ? filteredUsers.map((u) => (
-                <tr key={u._id} className="hover:bg-green-50/40 transition-colors group">
-                  <td className="px-10 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 text-green-700 rounded-2xl flex items-center justify-center font-black text-xl shadow-sm group-hover:scale-110 transition-transform uppercase">
-                        {u.nom[0]}
-                      </div>
-                      <span className="font-bold text-gray-800 text-lg">{u.nom} {u.prenom}</span>
-                    </div>
-                  </td>
-                  <td className="px-10 py-6 font-semibold text-gray-500">{u.email}</td>
-                  <td className="px-10 py-6">
-                    <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                      u.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
-                    }`}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="px-10 py-6 text-right">
-                    <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEditModal(u)} className="p-3 bg-white border border-gray-200 text-blue-500 rounded-xl hover:bg-blue-50 transition-all shadow-sm">
-                        <Pencil size={18} />
-                      </button>
-                      <button onClick={() => deleteUser(u._id)} className="p-3 bg-white border border-gray-200 text-red-500 rounded-xl hover:bg-red-50 transition-all shadow-sm">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )) : (
-                <tr><td colSpan="4" className="p-20 text-center text-gray-400 font-bold">Aucun utilisateur trouvé.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </main>
-
-      {/* --- MODAL (AJOUT / EDIT) --- */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
-            <div className="bg-green-600 p-8 text-white flex justify-between items-center">
-              <div>
-                <h3 className="text-2xl font-black">{editMode ? "Modifier le profil" : "Nouveau compte"}</h3>
-                <p className="text-green-100 text-sm mt-1">{editMode ? "Mise à jour des informations" : "Ajouter un membre à GreenLife"}</p>
-              </div>
-              <button onClick={closeModal} className="hover:rotate-90 transition-transform"><X size={30} /></button>
+        {success && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-3 text-emerald-600">
+              <CheckCircle size={20} /><span className="font-medium text-sm">{success}</span>
             </div>
+            <button onClick={() => setSuccess(null)} className="text-emerald-400 hover:text-emerald-600"><X size={18} /></button>
+          </div>
+        )}
 
-            <form onSubmit={handleSubmit} className="p-10 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-gray-400 tracking-widest px-1">Nom</label>
-                  <input
-                    required
-                    className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold"
-                    value={formUser.nom}
-                    onChange={(e) => setFormUser({ ...formUser, nom: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-gray-400 tracking-widest px-1">Prénom</label>
-                  <input
-                    className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold"
-                    value={formUser.prenom}
-                    onChange={(e) => setFormUser({ ...formUser, prenom: e.target.value })}
-                  />
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {statCards.map((stat, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-lg ${stat.color}`}>{stat.icon}</div>
+                <Activity className="text-gray-300" size={20} />
               </div>
+              <h3 className="text-gray-500 text-sm">{stat.title}</h3>
+              <p className="text-3xl font-bold text-gray-800 mt-1">{stat.value || 0}</p>
+            </div>
+          ))}
+        </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-gray-400 tracking-widest px-1">Email professionnel</label>
-                <input
-                  type="email" required
-                  className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold"
-                  value={formUser.email}
-                  onChange={(e) => setFormUser({ ...formUser, email: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-gray-400 tracking-widest px-1">
-                  {editMode ? "Changer mot de passe (laisser vide si inchangé)" : "Mot de passe"}
-                </label>
-                <input
-                  type="password"
-                  className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold"
-                  value={formUser.mdp}
-                  onChange={(e) => setFormUser({ ...formUser, mdp: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-gray-400 tracking-widest px-1">Rôle système</label>
-                <select
-                  className="w-full bg-gray-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-green-500 font-bold text-gray-600"
-                  value={formUser.role}
-                  onChange={(e) => setFormUser({ ...formUser, role: e.target.value })}
-                >
-                  <option value="client">Client (Utilisateur standard)</option>
-                  <option value="admin">Administrateur (Contrôle total)</option>
-                </select>
-              </div>
-
-              <button className="w-full bg-green-600 text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-green-100 hover:bg-green-700 transition-all mt-6 flex items-center justify-center gap-3">
-                {editMode ? <ShieldCheck /> : <UserPlus />}
-                {editMode ? "Enregistrer les modifications" : "Créer le compte"}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <input type="text" placeholder="Rechercher..." value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={fetchUsers} className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg text-sm">
+                <RefreshCw size={16} /> Actualiser
               </button>
+              <button onClick={() => { setError(null); setShowAddModal(true); }}
+                className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-lg hover:bg-emerald-700 text-sm">
+                <UserPlus size={18} /> Ajouter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-800">
+              <Users size={20} className="text-emerald-500 inline mr-2" />
+              Liste ({filteredUsers.length})
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : filteredUsers.length > 0 ? (
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Utilisateur</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Rôle</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Statut</th>
+                    <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
+                    <th className="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredUsers.map((user) => (
+                    <tr key={user._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${user.role === "admin" ? "bg-purple-500" : "bg-emerald-500"}`}>
+                            {user.nom?.charAt(0)?.toUpperCase() || "?"}
+                          </div>
+                          <div>
+                            <p className="font-medium">{user.nom} {user.prenom || ""}</p>
+                            <p className="text-xs text-gray-400">ID: {user._id?.slice(-6)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${user.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-emerald-100 text-emerald-700"}`}>{user.role}</span>
+                      </td>
+                      <td className="px-6 py-4"><span className="text-xs text-green-600">● Actif</span></td>
+                      <td className="px-6 py-4 text-sm text-gray-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString("fr-FR") : "-"}</td>
+                      <td className="px-6 py-4 text-right">
+                        {user.role !== "admin" && (
+                          <button onClick={() => handleDeleteUser(user._id)} className="text-gray-400 hover:text-red-600 p-2"><Trash2 size={18} /></button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="text-center py-12 text-gray-500">{searchTerm ? "Aucun résultat" : "Aucun utilisateur"}</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold"><UserPlus className="text-emerald-500 inline mr-2" size={22} />Ajouter</h3>
+              <button onClick={() => { setShowAddModal(false); setError(null); }} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
+            </div>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input type="text" value={newUser.nom} onChange={(e) => setNewUser({ ...newUser, nom: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input type="text" value={newUser.prenom} onChange={(e) => setNewUser({ ...newUser, prenom: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe *</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input type="password" value={newUser.mdp} onChange={(e) => setNewUser({ ...newUser, mdp: e.target.value })}
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm" required />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Type de compte</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setNewUser({ ...newUser, role: "client" })}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${newUser.role === "client" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-gray-200 text-gray-500"}`}>
+                    <UserCheck size={20} className="mx-auto mb-1" /><span className="text-xs font-bold">Client</span>
+                  </button>
+                  <button type="button" onClick={() => setNewUser({ ...newUser, role: "admin" })}
+                    className={`p-3 rounded-xl border-2 text-center transition-all ${newUser.role === "admin" ? "border-purple-500 bg-purple-50 text-purple-700" : "border-gray-200 text-gray-500"}`}>
+                    <Shield size={20} className="mx-auto mb-1" /><span className="text-xs font-bold">Admin</span>
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={addingUser} className="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg hover:bg-emerald-700 font-medium text-sm disabled:opacity-50">
+                  {addingUser ? "Ajout..." : `Ajouter ${newUser.role === "admin" ? "Admin" : "Client"}`}
+                </button>
+                <button type="button" onClick={() => { setShowAddModal(false); setError(null); }} className="px-4 py-2.5 border rounded-lg text-gray-700 hover:bg-gray-50 text-sm">Annuler</button>
+              </div>
             </form>
           </div>
         </div>
@@ -368,3 +425,5 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+

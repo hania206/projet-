@@ -1,167 +1,76 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import PublicNavbar from './components/PublicNavbar';
+import DashboardNavbar from './components/DashboardNavbar';
+import Footer from './components/Footer';
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Objectives from './pages/Objectives';
+import Ranking from './pages/Ranking';
+import Rapports from './pages/Rapports';
+import Recommandations from './pages/Recommandations';
+import Statistics from './pages/Statistics';
+import Settings from './pages/Settings';
+import Notifications from './pages/Notifications';
+import Alerts from './pages/Alerts';
+import AddRecord from './pages/AddRecord';
+import ResetPassword from './pages/ResetPassword';
+import './App.css';
 
-// Components
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import DashboardNavbar from "./components/DashboardNavbar";
+// Layout avec DashboardNavbar
+const DashboardPage = ({ children }) => (
+  <div className="flex flex-col min-h-screen">
+    <DashboardNavbar />
+    <main className="flex-1 bg-gray-50">
+      {children}
+    </main>
+  </div>
+);
 
-// Pages Publiques
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+// Layout avec PublicNavbar + Footer (uniquement Home)
+const HomePage = ({ children }) => (
+  <div className="flex flex-col min-h-screen">
+    <PublicNavbar />
+    <main className="flex-1">
+      {children}
+    </main>
+    <Footer />
+  </div>
+);
 
-// Pages Dashboard
-import Dashboard from "./pages/Dashboard";
-import AddRecord from "./pages/AddRecord";
-import Alerts from "./pages/Alerts";
-import Objectives from "./pages/Objectives";
-import Rapports from "./pages/Rapports";
-import Recommandations from "./pages/Recommandations";
-import Notifications from "./pages/Notifications"; // 🔥 AJOUT IMPORTANT
-
-// Pages pro
-import Statistics from "./pages/Statistics";
-import Settings from "./pages/Settings";
-
-// Admin
-import AdminDashboard from "./pages/AdminDashboard";
-
-// AUTH CHECK
-const RequireAuth = ({ children }) => {
-  const isLoggedIn = !!localStorage.getItem("userInfo");
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
-};
-
-export default function App() {
+function App() {
   return (
-    <Routes>
+    <Router>
+      <Routes>
+        {/* ==================== PAGES SANS HEADER/FOOTER (LAYOUT INTERNE) ==================== */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
-      {/* 🌍 PUBLIC ROUTES */}
-      <Route path="/" element={<><Header /><Home /><Footer /></>} />
-      <Route path="/login" element={<><Header /><Login /></>} />
-      <Route path="/register" element={<><Header /><Register /></>} />
+        {/* ==================== PAGE D'ACCUEIL avec PublicNavbar + Footer ==================== */}
+        <Route path="/" element={<HomePage><Home /></HomePage>} />
 
-      {/* 🔐 DASHBOARD ROUTES */}
-      <Route
-        path="/dashboard"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Dashboard />
-          </RequireAuth>
-        }
-      />
+        {/* ==================== PAGES AVEC LEUR PROPRE HEADER (SANS DashboardNavbar) ==================== */}
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/statistics" element={<Statistics />} />
+        <Route path="/settings" element={<Settings />} />
 
-      <Route
-        path="/add-record"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <AddRecord />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/statistics"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Statistics />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/settings"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Settings />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/objectives"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Objectives />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/alerts"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Alerts />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/rapports"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Rapports />
-          </RequireAuth>
-        }
-      />
-
-      <Route
-        path="/recommandations"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Recommandations />
-          </RequireAuth>
-        }
-      />
-
-      
-      <Route
-        path="/notifications"
-        element={
-          <RequireAuth>
-            <DashboardNavbar />
-            <Notifications />
-          </RequireAuth>
-        }
-      />
-
-      {/* 👑 ADMIN */}
-      <Route
-        path="/admin"
-        element={
-          <RequireAuth>
-            <AdminDashboard />
-          </RequireAuth>
-        }
-      />
-
-      {/* ❌ 404 */}
-      <Route
-        path="*"
-        element={
-          <div className="h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
-            <h1 className="text-9xl font-black text-slate-200">404</h1>
-            <p className="text-slate-500 font-bold -mt-4">
-              Page introuvable
-            </p>
-
-            <button
-              onClick={() => window.history.back()}
-              className="mt-6 px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold"
-            >
-              Retour
-            </button>
-          </div>
-        }
-      />
-    </Routes>
+        {/* ==================== PAGES AVEC DashboardNavbar ==================== */}
+        <Route path="/dashboard" element={<DashboardPage><Dashboard /></DashboardPage>} />
+        <Route path="/add-record" element={<DashboardPage><AddRecord /></DashboardPage>} />
+        <Route path="/objectives" element={<DashboardPage><Objectives /></DashboardPage>} />
+        <Route path="/alerts" element={<DashboardPage><Alerts /></DashboardPage>} />
+        <Route path="/rapports" element={<DashboardPage><Rapports /></DashboardPage>} />
+        <Route path="/recommandations" element={<DashboardPage><Recommandations /></DashboardPage>} />
+        <Route path="/ranking" element={<DashboardPage><Ranking /></DashboardPage>} />
+        <Route path="/notifications" element={<DashboardPage><Notifications /></DashboardPage>} />
+      </Routes>
+    </Router>
   );
 }
+
+export default App;
